@@ -3,11 +3,31 @@ class Pawn:
         if (cur == "♙ "):
             return ((fut == "  " and i1 - i2 == 1 and j2 == j1) or
                     (fut == "  " and i1 == 2+i2 == 6 and j2 == j1) or
-                    (is_enemys(cur, fut) and i1-i2 == 1 and abs(j2-j1) == 1))
+                    (is_enemys(cur, fut) and i1-i2 == 1 and abs(j2-j1) == 1) or
+                    Pawn.taking_pass())
         else:
             return ((fut == "  " and i2 - i1 == 1 and j2 == j1) or
                     (fut == "  " and i1 == i2-2 == 1 and j2 == j1) or
-                    (is_enemys(cur, fut) and i2-i1 == 1 and abs(j2-j1) == 1))
+                    (is_enemys(cur, fut) and i2-i1 == 1 and abs(j2-j1) == 1) or
+                    Pawn.taking_pass())
+    
+    def taking_pass():
+        if ((cur == "♙ " and prev[0] == "♟ " and prev[3]-prev[1]==2 and 
+            prev[1]+1==i2 and abs(prev[2]-j1)==1) or
+            (cur == "♟ " and prev[0] == "♙ " and prev[1]-prev[3]==2 and 
+            prev[1]-1==i2 and abs(prev[2]-j1)==1)):
+            board[prev[3]][prev[4]] = "  "
+            return True
+    
+    def change_pawn():
+        if (cur == "♙ " and i2 == 0) or (cur == "♟ " and i2 == 7):
+            while 1:
+                n = input("Replace? (icon of piece) ")
+                n = f"{''.join(n.split())} "
+                if (((n in team1 and cur in team1) or (n in team2 and cur in team2)) and 
+                    n != "♚ " and n != "♔ "):
+                    board[i2][j2] = n
+                    return
 
 
 class Rock:
@@ -22,23 +42,31 @@ class Rock:
                 if (board[i1][j] != "  "):
                     return False
             return True
+        if (Rock.castling()):
+            return True
+        return False
+    
+    def castling():
         return False
 
 
 class Horse:
     def move():
-        return (((abs(i1-i2) == 1 and abs(j1-j2) == 2) or (abs(i1-i2) == 2 and abs(j1-j2) == 1)))
+        return (((abs(i1-i2) == 1 and abs(j1-j2) == 2) or 
+                (abs(i1-i2) == 2 and abs(j1-j2) == 1)))
 
 
 class Elephant:
     def move():
         if (i1-i2 == j1-j2):
-            for i,j in zip(range(min(i1,i2)+1, max(i1,i2)), range(min(j1,j2)+1, max(j1,j2))):
+            for i,j in zip(range(min(i1,i2)+1, max(i1,i2)), 
+                           range(min(j1,j2)+1, max(j1,j2))):
                 if (board[i][j] != "  "):
                     return False
             return True
         if (abs(i1 - i2) == abs(j1 - j2)):
-            for i,j in zip(range(max(i1,i2)+1, min(i1,i2)), range(min(j1,j2)+1, max(j1,j2))):
+            for i,j in zip(range(max(i1,i2)+1, min(i1,i2)), 
+                           range(min(j1,j2)+1, max(j1,j2))):
                 if (board[i][j] != "  "):
                     return False
             return True
@@ -52,7 +80,20 @@ class Queen:
 
 class King:
     def move():
-        return ((-1 <= i1-i2 <= 1) and (-1 <= j1-j2 <= 1) and not(i1-i2 == j1-j2 == 0))
+        return (((-1 <= i1-i2 <= 1) and (-1 <= j1-j2 <= 1) and 
+                not(i1-i2 == j1-j2 == 0)) or King.castling())
+    
+    def castling():
+        return False
+    
+    def alive():
+        f1, f2 = False, False
+        for i in range(8):
+            if ("♔ " in board[i]):
+                f1 = True
+            if ("♚ " in board[i]):
+                f2 = True
+        return (f1 == f2 == True)
 
 
 def tutorial():
@@ -83,17 +124,7 @@ def cout():
     print ()
 
 
-def kings_alive():
-    f1, f2 = False, False
-    for i in range(8):
-        if ("♔ " in board[i]):
-            f1 = True
-        if ("♚ " in board[i]):
-            f2 = True
-    return (f1 == f2 == True)
-
-
-def reading(step):
+def reading():
     while(True):
         try:
             print("1st: " if (step) else "2nd: ")
@@ -107,12 +138,14 @@ def reading(step):
         except: continue
 
 
-def true_step(step):
-    return ((step == 1 and cur in team1) or (step == 0 and cur in team2))
+def true_step():
+    return ((step == 1 and cur in team1) or 
+            (step == 0 and cur in team2))
 
 
 def is_enemys(sh1, sh2):
-    return ((sh1 in team1 and sh2 in team2) or (sh1 in team2 and sh2 in team1))
+    return ((sh1 in team1 and sh2 in team2) or 
+            (sh1 in team2 and sh2 in team1))
 
 
 def answer():
@@ -124,10 +157,11 @@ def answer():
 
 
 def gameplay():
-    step = 1
-    while (kings_alive()):
-        reading(step)
-        if (true_step(step) and (is_enemys(cur, fut) or fut == "  ")):
+    global step, prev
+    step, prev = 1, ["  ", 0, 0, 0, 0]
+    while (King.alive()):
+        reading()
+        if (true_step() and (is_enemys(cur, fut) or fut == "  ")):
             if (((cur == "♙ " or cur == "♟ ") and Pawn.move()) or 
                 ((cur == "♖ " or cur == "♜ ") and Rock.move()) or
                 ((cur == "♘ " or cur == "♞ ") and Horse.move()) or
@@ -135,6 +169,8 @@ def gameplay():
                 ((cur == "♕ " or cur == "♛ ") and Queen.move()) or
                 ((cur == "♔ " or cur == "♚ ") and King.move())): 
                 board[i2][j2], board[i1][j1], step = cur, "  ", (step+1) % 2
+                prev = [cur, i1, j1, i2, j2]
+                Pawn.change_pawn()
                 cout()
     answer()
 
@@ -155,3 +191,4 @@ def main():
 
 
 main()
+
